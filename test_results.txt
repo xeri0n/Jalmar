@@ -1,0 +1,39 @@
+Reusing configuration cache.
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:desktopTestProcessResources NO-SOURCE
+> Task :shared:desktopProcessResources NO-SOURCE
+
+> Task :shared:compileKotlinDesktop
+w: file:///D:/JalmarQuest/Jalmar/shared/src/commonMain/kotlin/com/jalmarquest/shared/persistence/CloudSyncManager.kt:12:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///D:/JalmarQuest/Jalmar/shared/src/commonMain/kotlin/com/jalmarquest/shared/persistence/FileIO.kt:9:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///D:/JalmarQuest/Jalmar/shared/src/commonMain/kotlin/com/jalmarquest/shared/tts/TTSManager.kt:25:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///D:/JalmarQuest/Jalmar/shared/src/desktopMain/kotlin/com/jalmarquest/shared/persistence/CloudSyncManager.desktop.kt:10:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///D:/JalmarQuest/Jalmar/shared/src/desktopMain/kotlin/com/jalmarquest/shared/persistence/FileIO.desktop.kt:7:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+w: file:///D:/JalmarQuest/Jalmar/shared/src/desktopMain/kotlin/com/jalmarquest/shared/tts/TTSManager.desktop.kt:16:1 'expect'/'actual' classes (including interfaces, objects, annotations, enums, and 'actual' typealiases) are in Beta. You can use -Xexpect-actual-classes flag to suppress this warning. Also see: https://youtrack.jetbrains.com/issue/KT-61573
+
+> Task :shared:desktopMainClasses
+> Task :shared:desktopJar
+> Task :shared:compileTestKotlinDesktop
+> Task :shared:desktopTestClasses
+
+> Task :shared:desktopTest
+
+BackupManagerTest[desktop] > listBackups should return backups sorted by timestamp descending[desktop] FAILED
+    java.lang.AssertionError at BackupManagerTest.kt:102
+
+799 tests completed, 1 failed
+
+> Task :shared:desktopTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':shared:desktopTest'.
+> There were failing tests. See the report at: file:///D:/JalmarQuest/Jalmar/shared/build/reports/tests/desktopTest/index.html
+
+* Try:
+> Run with --scan to get full insights.
+
+BUILD FAILED in 20s
+4 actionable tasks: 4 executed
+Configuration cache entry reused.

@@ -1,0 +1,58 @@
+# Gradle
+.gradle/
+build/
+**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# Android
+*.apk
+*.ap_
+*.dex
+local.properties
+.navigation/
+captures/
+output.json
+
+# iOS
+*.xcuserstate
+*.xcworkspace
+xcuserdata/
+*.hmap
+*.ipa
+Pods/
+Podfile.lock
+
+# macOS
+.DS_Store
+*.dmg
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Kotlin/Native
+*.klib
+*.kexe
+*.kt.bc
+
+# Logs
+*.log
+
+# Save files
+.jalmarquest/
+
+# Temporary files
+*.tmp
+*.temp
