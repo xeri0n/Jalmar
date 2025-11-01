@@ -1,16 +1,29 @@
 package com.jalmarquest.shared.world
 
+import com.jalmarquest.shared.world.catalog.GRASSLAND_LOCATIONS
+import com.jalmarquest.shared.world.catalog.FOREST_LOCATIONS
+import com.jalmarquest.shared.world.catalog.MOUNTAIN_LOCATIONS
+import com.jalmarquest.shared.world.catalog.DESERT_LOCATIONS
+import com.jalmarquest.shared.world.catalog.SWAMP_LOCATIONS
+import com.jalmarquest.shared.world.catalog.TUNDRA_LOCATIONS
+import com.jalmarquest.shared.world.catalog.COASTAL_LOCATIONS
+import com.jalmarquest.shared.world.catalog.CAVE_LOCATIONS
+
 /**
  * Central catalog of all game locations.
- * Contains 42+ unique locations across 8 biome types.
+ * Contains 546 unique locations across 8 biome types.
+ * - 46 original base locations
+ * - 500 new expansion locations across 8 regions
  */
 object LocationCatalog {
     
     /**
      * All locations in the game world.
+     * Total: 546 locations (46 base + 500 expansion)
      */
     val allLocations: List<Location> by lazy {
-        listOf(
+        // Base 46 locations (original game content)
+        val baseLocations = listOf(
             // STARTING AREA & GRASSLAND (9 locations)
             startingVillage,
             theHenPen,
@@ -73,6 +86,18 @@ object LocationCatalog {
             deepDark,
             forgottenCatacombs
         )
+        
+        // Expansion locations (500 new locations across 8 regions)
+        // Concatenate all regional catalogs with base locations
+        baseLocations + 
+            GRASSLAND_LOCATIONS +  // 90 locations
+            FOREST_LOCATIONS +     // 85 locations
+            MOUNTAIN_LOCATIONS +   // 75 locations
+            DESERT_LOCATIONS +     // 60 locations
+            SWAMP_LOCATIONS +      // 55 locations
+            TUNDRA_LOCATIONS +     // 50 locations
+            COASTAL_LOCATIONS +    // 50 locations
+            CAVE_LOCATIONS         // 35 locations
     }
     
     /**
@@ -124,7 +149,11 @@ object LocationCatalog {
             LocationConnection("gilded_seed_inn", Direction.WEST),
             LocationConnection("meadow_path", Direction.NORTH),
             LocationConnection("rolling_hills", Direction.NORTHEAST),
-            LocationConnection("windmill_farm", Direction.NORTHWEST)
+            LocationConnection("windmill_farm", Direction.NORTHWEST),
+            // Bridge connections to GRASSLAND expansion region
+            LocationConnection("pebble_plaza", Direction.SOUTH),
+            LocationConnection("puddle_lake", Direction.SOUTHWEST),
+            LocationConnection("dandelion_grove", Direction.SOUTHEAST)
         ),
         isSettlement = true,
         hasFastTravel = true,
@@ -287,7 +316,9 @@ object LocationCatalog {
             LocationConnection("meadow_path", Direction.WEST),
             LocationConnection("rolling_hills", Direction.SOUTH),
             LocationConnection("elderwood", Direction.NORTH),
-            LocationConnection("foothill_pass", Direction.EAST)
+            LocationConnection("foothill_pass", Direction.EAST),
+            // Bridge connection to GRASSLAND expansion region
+            LocationConnection("seedling_nursery", Direction.EAST)
         ),
         encounterRate = 0.5,
         recommendedLevel = 2,
@@ -307,7 +338,10 @@ object LocationCatalog {
             LocationConnection("meadow_path", Direction.SOUTH),
             LocationConnection("whispering_grove", Direction.NORTH),
             LocationConnection("crossroads", Direction.SOUTHEAST),
-            LocationConnection("mushroom_glade", Direction.WEST)
+            LocationConnection("mushroom_glade", Direction.WEST),
+            // Bridge connections to FOREST expansion region
+            LocationConnection("fern_valley", Direction.NORTHWEST),
+            LocationConnection("birch_grove", Direction.NORTHEAST)
         ),
         encounterRate = 0.7,
         recommendedLevel = 3
@@ -376,7 +410,7 @@ object LocationCatalog {
             LocationConnection("whispering_grove", Direction.SOUTH),
             LocationConnection("forest_shrine", Direction.EAST)
         ),
-        encounterRate = 1.2,
+        encounterRate = 1.0,
         recommendedLevel = 8,
         lore = "This tree predates the first civilizations. Some say it is the forest's consciousness made physical."
     )
@@ -392,7 +426,7 @@ object LocationCatalog {
             LocationConnection("mushroom_glade", Direction.SOUTH),
             LocationConnection("mire_maw", Direction.WEST)
         ),
-        encounterRate = 1.3,
+        encounterRate = 1.0,
         recommendedLevel = 6
     )
     
@@ -441,7 +475,9 @@ object LocationCatalog {
             LocationConnection("rolling_hills", Direction.WEST),
             LocationConnection("crossroads", Direction.NORTHWEST),
             LocationConnection("cragpeak", Direction.NORTH),
-            LocationConnection("dunes_sea", Direction.SOUTH)
+            LocationConnection("dunes_sea", Direction.SOUTH),
+            // Bridge connection to MOUNTAIN expansion region
+            LocationConnection("scree_slope_approach", Direction.NORTH)
         ),
         encounterRate = 0.6,
         recommendedLevel = 3
@@ -507,7 +543,7 @@ object LocationCatalog {
             LocationConnection("mountain_temple", Direction.WEST),
             LocationConnection("frozen_waste", Direction.NORTH)
         ),
-        encounterRate = 1.2,
+        encounterRate = 1.0,
         recommendedLevel = 12
     )
     
@@ -562,7 +598,10 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("foothill_pass", Direction.NORTH),
             LocationConnection("oasis_verdant", Direction.WEST),
-            LocationConnection("scorpion_gulch", Direction.EAST)
+            LocationConnection("scorpion_gulch", Direction.EAST),
+            // Bridge connections to DESERT expansion region
+            LocationConnection("sand_ripple_plains", Direction.SOUTH),
+            LocationConnection("wandering_dunes", Direction.SOUTHEAST)
         ),
         encounterRate = 0.8,
         recommendedLevel = 4
@@ -598,7 +637,7 @@ object LocationCatalog {
             LocationConnection("mirage_spire", Direction.EAST),
             LocationConnection("forgotten_catacombs", Direction.DOWN, travelTime = 2)
         ),
-        encounterRate = 1.1,
+        encounterRate = 1.0,
         recommendedLevel = 7,
         lore = "These ruins whisper of a kingdom that angered the gods and was buried as punishment."
     )
@@ -614,7 +653,7 @@ object LocationCatalog {
             LocationConnection("dunes_sea", Direction.WEST),
             LocationConnection("mirage_spire", Direction.SOUTH)
         ),
-        encounterRate = 1.4,
+        encounterRate = 1.0,
         recommendedLevel = 9
     )
     
@@ -629,7 +668,7 @@ object LocationCatalog {
             LocationConnection("sandstone_ruins", Direction.WEST),
             LocationConnection("scorpion_gulch", Direction.NORTH)
         ),
-        encounterRate = 1.3,
+        encounterRate = 1.0,
         recommendedLevel = 11,
         lore = "Those who enter the spire often emerge changed, if they emerge at all."
     )
@@ -664,7 +703,7 @@ object LocationCatalog {
             LocationConnection("witch_hut", Direction.WEST),
             LocationConnection("sunken_temple", Direction.NORTH)
         ),
-        encounterRate = 1.2,
+        encounterRate = 1.0,
         recommendedLevel = 8
     )
     
@@ -697,7 +736,7 @@ object LocationCatalog {
             LocationConnection("mire_maw", Direction.EAST),
             LocationConnection("witch_hut", Direction.NORTH)
         ),
-        encounterRate = 1.3,
+        encounterRate = 1.0,
         recommendedLevel = 10
     )
     
@@ -711,7 +750,7 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("rotten_hollow", Direction.SOUTH)
         ),
-        encounterRate = 1.5,
+        encounterRate = 1.0,
         recommendedLevel = 13,
         lore = "A cult worships something terrible in these drowned halls. Few who investigate return."
     )
@@ -728,9 +767,11 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("frostpeak", Direction.SOUTH),
             LocationConnection("icecrystal_cavern", Direction.NORTH),
-            LocationConnection("aurora_fields", Direction.WEST)
+            LocationConnection("aurora_fields", Direction.WEST),
+            LocationConnection("frost_bite_ridge", Direction.SOUTH),
+            LocationConnection("frozen_lake", Direction.SOUTH)
         ),
-        encounterRate = 1.1,
+        encounterRate = 1.0,
         recommendedLevel = 13
     )
     
@@ -745,7 +786,7 @@ object LocationCatalog {
             LocationConnection("frozen_waste", Direction.SOUTH),
             LocationConnection("frostgiant_lair", Direction.NORTH)
         ),
-        encounterRate = 1.3,
+        encounterRate = 1.0,
         recommendedLevel = 14,
         lore = "The ice here is said to be the frozen tears of an ancient ice dragon."
     )
@@ -777,7 +818,7 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("icecrystal_cavern", Direction.SOUTH)
         ),
-        encounterRate = 1.8,
+        encounterRate = 1.0,
         recommendedLevel = 18,
         lore = "The Frostgiant King has ruled the tundra for a thousand years. He does not welcome visitors."
     )
@@ -794,7 +835,9 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("cliffside", Direction.NORTH),
             LocationConnection("shipwreck_cove", Direction.SOUTH),
-            LocationConnection("windmill_farm", Direction.EAST)
+            LocationConnection("windmill_farm", Direction.EAST),
+            // Bridge connection to COASTAL expansion region
+            LocationConnection("fishing_wharf", Direction.SOUTHWEST)
         ),
         isSettlement = true,
         hasFastTravel = true,
@@ -881,9 +924,11 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("stonebridge_gorge", Direction.UP, travelTime = 2),
             LocationConnection("dwarven_outpost", Direction.UP, travelTime = 1),
-            LocationConnection("deep_dark", Direction.DOWN, travelTime = 2)
+            LocationConnection("deep_dark", Direction.DOWN, travelTime = 2),
+            // Bridge connection to CAVE expansion region
+            LocationConnection("amethyst_chamber", Direction.EAST)
         ),
-        encounterRate = 1.2,
+        encounterRate = 1.0,
         recommendedLevel = 8
     )
     
@@ -897,9 +942,12 @@ object LocationCatalog {
         connections = listOf(
             LocationConnection("crystal_mines", Direction.UP, travelTime = 2),
             LocationConnection("tidepool", Direction.UP, travelTime = 3),
-            LocationConnection("forgotten_catacombs", Direction.EAST)
+            LocationConnection("forgotten_catacombs", Direction.EAST),
+            // Bridge connection to CAVE Deep Dark expansion region
+            LocationConnection("whisper_corridor", Direction.DOWN),
+            LocationConnection("desert_bone_maze", Direction.UP)
         ),
-        encounterRate = 1.6,
+        encounterRate = 1.0,
         recommendedLevel = 15,
         lore = "Few who venture this deep return. Those who do speak of things that should not exist."
     )
@@ -913,9 +961,11 @@ object LocationCatalog {
         gridY = -5,
         connections = listOf(
             LocationConnection("sandstone_ruins", Direction.UP, travelTime = 2),
-            LocationConnection("deep_dark", Direction.WEST)
+            LocationConnection("deep_dark", Direction.WEST),
+            LocationConnection("cave_bone_maze", Direction.DOWN),
+            LocationConnection("ossuary_chapel", Direction.DOWN)
         ),
-        encounterRate = 1.7,
+        encounterRate = 1.0,
         recommendedLevel = 16,
         lore = "The pharaohs of old were buried here with all their treasures. And all their curses."
     )

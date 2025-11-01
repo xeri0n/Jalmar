@@ -23,6 +23,7 @@ import dev.xeri0n.jalmarquest.ui.navigation.Screen
 import dev.xeri0n.jalmarquest.ui.screens.MainMenuScreen
 import dev.xeri0n.jalmarquest.ui.screens.SettingsScreen
 import dev.xeri0n.jalmarquest.ui.viewmodel.SettingsViewModel
+import dev.xeri0n.jalmarquest.ui.theme.Spacing
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlin.system.exitProcess
@@ -227,12 +228,124 @@ fun GameplayScreen(
     var showNotification by remember { mutableStateOf(false) }
     var showLocationDetails by remember { mutableStateOf(false) }
     
+    // Combat state
+    var activeCombat by remember { mutableStateOf<com.jalmarquest.shared.combat.CombatState?>(null) }
+    
+    // Monitor combat state for automatic enemy turns and combat end
+    LaunchedEffect(activeCombat) {
+        val combat = activeCombat ?: return@LaunchedEffect
+        
+        // Check if combat is over
+        if (combat.isCombatOver()) {
+            kotlinx.coroutines.delay(1000) // Brief delay to show final state
+            
+            if (combat.isVictory()) {
+                // Award XP
+                val xpGained = combat.enemies.sumOf { it.xpReward }
+                gameStateManager.updateState { state ->
+                    state.copy(
+                        player = state.player.copy(
+                            experience = state.player.experience + xpGained,
+                            stats = state.player.stats.copy(
+                                currentHealth = combat.player.currentHp
+                            )
+                        )
+                    )
+                }
+                notificationMessage = "Victory! Gained $xpGained XP"
+                showNotification = true
+            } else if (combat.isDefeat()) {
+                // Game over
+                notificationMessage = "Defeated... Returning to last safe point"
+                showNotification = true
+                
+                // Reset player HP to 1 and return to starting village
+                gameStateManager.updateState { state ->
+                    state.copy(
+                        player = state.player.copy(
+                            stats = state.player.stats.copy(
+                                currentHealth = 1
+                            ),
+                            position = com.jalmarquest.shared.model.Position(0, 0, "starting_village")
+                        )
+                    )
+                }
+            }
+            
+            activeCombat = null
+            return@LaunchedEffect
+        }
+        
+        // If it's not the player's turn and combat isn't over, process enemy turns
+        if (!combat.isPlayerTurn()) {
+            var currentCombat = combat
+            
+            // Keep executing enemy turns until it's the player's turn or combat ends
+            while (!currentCombat.isCombatOver() && !currentCombat.isPlayerTurn()) {
+                // Delay to show enemy turn animation
+                kotlinx.coroutines.delay(800)
+                
+                val currentActorId = currentCombat.getCurrentTurnParticipantId()
+                val enemy = currentCombat.getEnemy(currentActorId)
+                
+                if (enemy != null) {
+                    // Get enemy from catalog to determine behavior type
+                    val enemyCatalogEntry = com.jalmarquest.shared.combat.EnemyCatalog.allEnemies.find {
+                        enemy.name == it.name
+                    }
+                    
+                    if (enemyCatalogEntry != null) {
+                        // Use AI to decide action
+                        val action = com.jalmarquest.shared.combat.EnemyAI.decideAction(
+                            enemyId = currentActorId,
+                            behaviorType = enemyCatalogEntry.behaviorType,
+                            combatState = currentCombat
+                        )
+                        
+                        // Execute enemy action
+                        val (newState, _) = com.jalmarquest.shared.combat.CombatManager.executeAction(
+                            currentCombat,
+                            action
+                        )
+                        currentCombat = newState
+                        activeCombat = currentCombat // Update immediately to show action result
+                    }
+                }
+                
+                // Advance to next turn
+                currentCombat = com.jalmarquest.shared.combat.CombatManager.advanceTurn(currentCombat)
+                activeCombat = currentCombat
+            }
+        }
+    }
+    
     // Auto-dismiss notification after 3 seconds
     LaunchedEffect(showNotification) {
         if (showNotification) {
             kotlinx.coroutines.delay(3000)
             showNotification = false
         }
+    }
+    
+    // Helper function: Convert Player to PlayerCombatData
+    fun playerToCombatData(player: com.jalmarquest.shared.model.Player): com.jalmarquest.shared.combat.PlayerCombatData {
+        // For now, use basic weapon/armor values (TODO: lookup from ItemCatalog)
+        val weaponDamage = if (player.equippedItems.containsKey(com.jalmarquest.shared.equipment.EquipmentSlot.WEAPON)) 5 else 0
+        val armorDefense = player.equippedItems.count { it.value.slot.name.contains("ARMOR") || it.value.slot.name.contains("HELMET") || it.value.slot.name.contains("BOOTS") } * 2
+        
+        return com.jalmarquest.shared.combat.PlayerCombatData(
+            id = player.id,
+            name = player.name,
+            currentHp = player.stats.currentHealth,
+            maxHp = player.stats.maxHealth,
+            strength = player.stats.attack,
+            agility = player.stats.speed,
+            vitality = player.stats.defense,
+            intelligence = player.stats.magicPower,
+            luck = player.stats.luck,
+            weaponDamage = weaponDamage,
+            armorDefense = armorDefense
+        )
     }
     
     Box(modifier = Modifier.fillMaxSize()) {
@@ -247,28 +360,36 @@ fun GameplayScreen(
                 )
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
+                    // Centered location name
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = currentLocation?.name ?: "Unknown",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "${gameState.worldTime.season.name} • ${gameState.worldTime.getTimeOfDay().name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = gameState.weather.describe(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    
+                    // Details button at bottom right
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = currentLocation?.name ?: "Unknown",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "${gameState.worldTime.season.name} • ${gameState.worldTime.getTimeOfDay().name}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = gameState.weather.describe(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                            )
-                        }
                         TextButton(
                             onClick = { showLocationDetails = !showLocationDetails }
                         ) {
@@ -471,8 +592,15 @@ fun GameplayScreen(
                                     }
                                     Button(
                                         onClick = {
-                                            notificationMessage = "Combat system coming soon!"
-                                            showNotification = true
+                                            // Initiate combat with this enemy
+                                            val playerCombatData = playerToCombatData(gameState.player)
+                                            val enemyInstance = enemy.toCombatData("enemy_${System.currentTimeMillis()}")
+                                            
+                                            activeCombat = com.jalmarquest.shared.combat.CombatManager.initiateCombat(
+                                                combatId = "combat_${System.currentTimeMillis()}",
+                                                player = playerCombatData,
+                                                enemies = listOf(enemyInstance)
+                                            )
                                         },
                                         modifier = Modifier.padding(start = 8.dp),
                                         colors = ButtonDefaults.buttonColors(
@@ -560,6 +688,95 @@ fun GameplayScreen(
             // Statistics & Achievements
             StatisticsAndAchievementsCard(gameState)
             }
+        }
+        
+        // Combat Screen Overlay (full screen)
+        activeCombat?.let { combat ->
+            // Create basic attack skill - always provide it for now
+            val playerSkills = listOf(
+                com.jalmarquest.shared.skills.SkillCatalog.getSkill("fighter_twig_strike")
+                    ?: com.jalmarquest.shared.skills.Skill(
+                        id = "basic_attack",
+                        name = "Basic Attack",
+                        description = "A simple melee attack",
+                        archetype = com.jalmarquest.shared.skills.SkillArchetype.FIGHTER,
+                        tier = com.jalmarquest.shared.skills.SkillTier.TIER_1,
+                        effects = listOf(com.jalmarquest.shared.skills.SkillEffect.Damage(baseDamage = 5, statScaling = 0.5f)),
+                        targetType = com.jalmarquest.shared.skills.SkillTargetType.SINGLE_ENEMY
+                    )
+            )
+            
+            dev.xeri0n.jalmarquest.ui.screens.CombatScreen(
+                combatState = combat,
+                playerSkills = playerSkills,
+                onSkillSelected = { skill, targetId ->
+                    // Execute skill action - default to first enemy if no target specified
+                    val actualTargetId = targetId ?: combat.enemies.firstOrNull()?.id ?: return@CombatScreen
+                    
+                    val (newState, result) = com.jalmarquest.shared.combat.CombatManager.executeAction(
+                        combat,
+                        com.jalmarquest.shared.combat.CombatAction.UseSkill(skill.id, actualTargetId)
+                    )
+                    
+                    // Advance turn if action succeeded
+                    if (result is com.jalmarquest.shared.combat.CombatActionResult.Success) {
+                        activeCombat = com.jalmarquest.shared.combat.CombatManager.advanceTurn(newState)
+                    } else {
+                        activeCombat = newState
+                    }
+                },
+                onDefend = {
+                    // Execute defend action
+                    val (newState, result) = com.jalmarquest.shared.combat.CombatManager.executeAction(
+                        combat,
+                        com.jalmarquest.shared.combat.CombatAction.Defend
+                    )
+                    
+                    if (result is com.jalmarquest.shared.combat.CombatActionResult.Success) {
+                        activeCombat = com.jalmarquest.shared.combat.CombatManager.advanceTurn(newState)
+                    } else {
+                        activeCombat = newState
+                    }
+                },
+                onItem = {
+                    // TODO: Implement item usage in combat
+                    notificationMessage = "Item usage coming soon!"
+                    showNotification = true
+                },
+                onFlee = {
+                    // Execute flee action
+                    val (newState, result) = com.jalmarquest.shared.combat.CombatManager.executeAction(
+                        combat,
+                        com.jalmarquest.shared.combat.CombatAction.Flee
+                    )
+                    
+                    if (result is com.jalmarquest.shared.combat.CombatActionResult.Success) {
+                        // Fled successfully
+                        activeCombat = null
+                        notificationMessage = "Escaped from combat!"
+                        showNotification = true
+                    } else {
+                        // Flee failed
+                        activeCombat = com.jalmarquest.shared.combat.CombatManager.advanceTurn(newState)
+                        notificationMessage = "Failed to escape!"
+                        showNotification = true
+                    }
+                },
+                onCombatEnd = {
+                    // Combat end is now handled by LaunchedEffect
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        
+        // Floating Player Status Panel (top-left corner)
+        if (activeCombat == null) {
+            dev.xeri0n.jalmarquest.ui.components.PlayerStatusPanel(
+                player = gameState.player,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(Spacing.medium)
+            )
         }
         
         // Floating Notification Overlay (top-center)

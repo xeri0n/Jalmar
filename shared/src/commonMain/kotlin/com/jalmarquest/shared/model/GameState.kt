@@ -1,11 +1,17 @@
 package com.jalmarquest.shared.model
 
+import com.jalmarquest.shared.ai.AIDirector
+import com.jalmarquest.shared.butterfly.ButterflyEffectState
 import com.jalmarquest.shared.companion.CompanionProgress
 import com.jalmarquest.shared.dialogue.DialogueMemory
+import com.jalmarquest.shared.difficulty.DifficultyState
+import com.jalmarquest.shared.events.WorldEventState
+import com.jalmarquest.shared.gossip.GossipState
 import com.jalmarquest.shared.nest.Nest
 import com.jalmarquest.shared.nest.NestManager
 import com.jalmarquest.shared.npc.NPCRelationship
 import com.jalmarquest.shared.npc.FactionStanding
+import com.jalmarquest.shared.radiant.RadiantQuestState
 import com.jalmarquest.shared.weather.Weather
 import com.jalmarquest.shared.world.LocationDiscovery
 import kotlinx.serialization.Serializable
@@ -19,6 +25,12 @@ data class GameState(
     val version: Int = 1,
     val player: Player,
     val nest: Nest = NestManager.createBasicNest(),
+    val aiDirector: AIDirector = AIDirector(),
+    val butterflyEffect: ButterflyEffectState = ButterflyEffectState(),
+    val worldEvents: WorldEventState = WorldEventState(),
+    val radiantQuests: RadiantQuestState = RadiantQuestState(),
+    val gossipState: GossipState = GossipState(),
+    val difficultyState: DifficultyState = DifficultyState(),
     val worldTime: WorldTime = WorldTime(),
     val weather: Weather = Weather.CLEAR_SKY,
     val statistics: PlayerStatistics = PlayerStatistics(),

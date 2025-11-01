@@ -17,6 +17,9 @@ enum class CraftingCategory {
     /** Material items (refined materials, components) */
     MATERIAL,
     
+    /** Upgrade recipes (improve existing equipment) */
+    UPGRADE,
+    
     /** Special/unique items */
     SPECIAL
 }

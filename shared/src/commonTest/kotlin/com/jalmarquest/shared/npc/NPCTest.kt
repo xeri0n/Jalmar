@@ -185,9 +185,9 @@ class NPCTest {
     // ===== NPC CATALOG TESTS =====
     
     @Test
-    fun `NPCCatalog should have 16 NPCs`() {
-        assertEquals(16, NPCCatalog.getTotalNPCCount())
-        assertEquals(16, NPCCatalog.allNPCs.size)
+    fun `NPCCatalog should have 52 NPCs`() {
+        assertEquals(52, NPCCatalog.getTotalNPCCount())
+        assertEquals(52, NPCCatalog.allNPCs.size)
     }
     
     @Test
@@ -219,10 +219,10 @@ class NPCTest {
     @Test
     fun `NPCCatalog should filter by occupation`() {
         val warriors = NPCCatalog.getNPCsByOccupation(NPCOccupation.WARRIOR)
-        assertEquals(2, warriors.size) // Captain Bravewing, Sparrow Scout
+        assertEquals(7, warriors.size) // Captain Bravewing, Sparrow Scout, Oak Strongbranch, Hunter Quickshot, Crag Stonefist, Scorpio Stingweaver, Arena Master
         
         val children = NPCCatalog.getNPCsByOccupation(NPCOccupation.CHILD)
-        assertEquals(3, children.size) // Pip, Chirp, Cheep
+        assertEquals(8, children.size) // Pip, Chirp, Cheep, 5 chick companions
     }
     
     @Test
@@ -490,7 +490,7 @@ class NPCTest {
         val manager = NPCManager()
         val warriors = manager.getNPCsByOccupation(NPCOccupation.WARRIOR)
         
-        assertEquals(2, warriors.size)
+        assertEquals(7, warriors.size)
     }
     
     @Test
