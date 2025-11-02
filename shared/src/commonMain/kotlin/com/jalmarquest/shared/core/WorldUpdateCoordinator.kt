@@ -3,7 +3,7 @@ package com.jalmarquest.shared.core
 import com.jalmarquest.shared.state.GameStateManager
 import com.jalmarquest.shared.time.TimeManager
 import com.jalmarquest.shared.weather.WeatherManager
-import com.jalmarquest.shared.world.LocationManager
+import com.jalmarquest.shared.world.BiomeType
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,6 @@ class WorldUpdateCoordinator(
     private val gameStateManager: GameStateManager,
     private val timeManager: TimeManager,
     private val weatherManager: WeatherManager,
-    private val locationManager: LocationManager,
     private val autosaveManager: AutosaveManager,
     private val scope: CoroutineScope
 ) {
@@ -141,16 +140,12 @@ class WorldUpdateCoordinator(
         
         // Update weather based on time progression
         // Weather advances by 1 in-game minute per tick (at 20 TPS, 60 ticks = 1 minute)
-        val currentLocation = locationManager.getLocation(currentState.player.position.locationId)
-        val newWeather = if (currentLocation != null) {
-            weatherManager.advanceTime(
-                minutes = 1,
-                season = newTime.season,
-                biome = currentLocation.biome
-            )
-        } else {
-            currentState.weather.advance(1)
-        }
+        // TODO: Get biome from tile-based world system
+        val newWeather = weatherManager.advanceTime(
+            minutes = 1,
+            season = newTime.season,
+            biome = BiomeType.GRASSLAND // Default for now
+        )
         
         // Update game state with new time, weather, and regenerate stamina
         gameStateManager.updateState { state ->

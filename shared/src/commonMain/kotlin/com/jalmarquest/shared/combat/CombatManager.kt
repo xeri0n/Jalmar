@@ -616,4 +616,46 @@ object CombatManager {
             state.addToLog(message) to CombatActionResult.Failure(CombatActionFailureReason.FLEE_FAILED)
         }
     }
+    
+    /**
+     * Generates combat rewards from defeated enemies.
+     * Calculates total XP and generates loot from all defeated enemy loot tables.
+     * 
+     * @param defeatedEnemies List of all enemies defeated in combat (must all be from EnemyCatalog)
+     * @return CombatRewards containing XP and loot drops
+     */
+    fun generateCombatRewards(defeatedEnemies: List<EnemyCombatData>): CombatRewards {
+        var totalXp = 0
+        val allLoot = mutableListOf<Pair<String, Int>>()
+        val enemyNames = mutableListOf<String>()
+        
+        defeatedEnemies.forEach { enemyData ->
+            // Get enemy from catalog to access loot table and XP
+            val enemy = EnemyCatalog.getEnemy(enemyData.catalogId)
+            
+            if (enemy != null) {
+                // Add XP reward
+                totalXp += enemy.xpReward
+                
+                // Generate loot from enemy's loot table
+                val lootResult = LootSystem.generateLoot(enemy.lootTable)
+                if (lootResult is LootResult.Success) {
+                    allLoot.addAll(lootResult.itemsDropped)
+                }
+                
+                // Track enemy name
+                enemyNames.add(enemyData.name)
+            }
+        }
+        
+        // Combine duplicate items (e.g., 2x twig + 3x twig = 5x twig)
+        val consolidatedLoot = allLoot.groupBy { it.first }
+            .map { (itemId, pairs) -> itemId to pairs.sumOf { it.second } }
+        
+        return CombatRewards(
+            xpGained = totalXp,
+            itemsLooted = consolidatedLoot,
+            defeatedEnemies = enemyNames
+        )
+    }
 }

@@ -137,6 +137,7 @@ data class Enemy(
             baseDamage = baseDamage,
             defense = defense,
             xpReward = xpReward,
+            catalogId = id, // Store catalog ID for loot lookup
             activeStatusEffects = emptyList()
         )
     }

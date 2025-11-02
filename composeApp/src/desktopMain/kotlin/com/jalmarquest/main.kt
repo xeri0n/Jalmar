@@ -22,11 +22,7 @@ fun main() {
             title = "JalmarQuest",
             state = rememberWindowState(width = 800.dp, height = 600.dp)
         ) {
-            MaterialTheme {
-                JalmarQuestScreen(
-                    gameStateManager = koinInject()
-                )
-            }
+            App()
         }
     }
 }

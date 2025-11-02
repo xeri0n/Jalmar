@@ -35,6 +35,7 @@ class CombatTest {
     private fun createTestEnemy(
         id: String = "enemy1",
         name: String = "Grasshopper",
+        catalogId: String = "grasshopper", // Default to grasshopper in catalog
         hp: Int = 50,
         strength: Int = 8,
         agility: Int = 12,
@@ -51,7 +52,8 @@ class CombatTest {
         intelligence = 3,
         luck = 3,
         baseDamage = baseDamage,
-        defense = defense
+        defense = defense,
+        catalogId = catalogId
     )
     
     // ========== StatusEffect Tests ==========
@@ -606,5 +608,102 @@ class CombatTest {
         // Player should have taken 5 damage per round = 15 total
         assertEquals(85, state.player.currentHp)
     }
+    
+    // ===== COMBAT REWARDS TESTS =====
+    
+    @Test
+    fun `generateCombatRewards calculates XP from single enemy`() {
+        val enemy = createTestEnemy(id = "grasshopper1", name = "Grasshopper")
+        
+        val rewards = CombatManager.generateCombatRewards(listOf(enemy))
+        
+        // Grasshopper gives 12 XP in catalog
+        assertEquals(12, rewards.xpGained)
+        assertEquals(listOf("Grasshopper"), rewards.defeatedEnemies)
+    }
+    
+    @Test
+    fun `generateCombatRewards calculates XP from multiple enemies`() {
+        val enemy1 = createTestEnemy(id = "grasshopper1", name = "Grasshopper", catalogId = "grasshopper")
+        val enemy2 = createTestEnemy(id = "beetle1", name = "Beetle", catalogId = "beetle")
+        
+        val rewards = CombatManager.generateCombatRewards(listOf(enemy1, enemy2))
+        
+        // Grasshopper (12 XP) + Beetle (25 XP) = 37 XP
+        assertEquals(37, rewards.xpGained)
+        assertEquals(2, rewards.defeatedEnemies.size)
+    }
+    
+    @Test
+    fun `generateCombatRewards generates loot from enemy loot tables`() {
+        val enemy = createTestEnemy(id = "grasshopper1", name = "Grasshopper")
+        
+        val rewards = CombatManager.generateCombatRewards(listOf(enemy))
+        
+        // Grasshopper drops twigs and seeds (probabilistic)
+        // We can't test exact items due to randomness, but we can verify structure
+        assertTrue(rewards.itemsLooted.all { it.second > 0 })
+    }
+    
+    @Test
+    fun `generateCombatRewards consolidates duplicate items from multiple enemies`() {
+        // Create multiple enemies that drop the same items
+        val enemy1 = createTestEnemy(id = "grasshopper1", name = "Grasshopper")
+        val enemy2 = createTestEnemy(id = "grasshopper2", name = "Grasshopper")
+        
+        val rewards = CombatManager.generateCombatRewards(listOf(enemy1, enemy2))
+        
+        // Items should be consolidated (e.g., if both drop 2 twigs, should be 4 twigs total)
+        val itemCounts = rewards.itemsLooted.groupBy { it.first }
+        itemCounts.values.forEach { itemList ->
+            assertEquals(1, itemList.size, "Items should be consolidated, not duplicated")
+        }
+    }
+    
+    @Test
+    fun `generateCombatRewards returns zero XP for empty enemy list`() {
+        val rewards = CombatManager.generateCombatRewards(emptyList())
+        
+        assertEquals(0, rewards.xpGained)
+        assertTrue(rewards.itemsLooted.isEmpty())
+        assertTrue(rewards.defeatedEnemies.isEmpty())
+    }
+    
+    @Test
+    fun `CombatRewards summary formats correctly`() {
+        val rewards = CombatRewards(
+            xpGained = 50,
+            itemsLooted = listOf("twig" to 3, "seed" to 2),
+            defeatedEnemies = listOf("Grasshopper")
+        )
+        
+        val summary = rewards.summary()
+        assertTrue(summary.contains("50 XP"))
+        assertTrue(summary.contains("3× twig"))
+        assertTrue(summary.contains("2× seed"))
+    }
+    
+    @Test
+    fun `CombatRewards validates non-negative XP`() {
+        assertFailsWith<IllegalArgumentException> {
+            CombatRewards(
+                xpGained = -10,
+                itemsLooted = emptyList(),
+                defeatedEnemies = emptyList()
+            )
+        }
+    }
+    
+    @Test
+    fun `CombatRewards validates positive item quantities`() {
+        assertFailsWith<IllegalArgumentException> {
+            CombatRewards(
+                xpGained = 10,
+                itemsLooted = listOf("twig" to 0),
+                defeatedEnemies = emptyList()
+            )
+        }
+    }
 }
+
 

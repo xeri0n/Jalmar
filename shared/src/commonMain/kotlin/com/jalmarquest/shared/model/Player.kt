@@ -16,6 +16,7 @@ data class Player(
     val experience: Long = 0,
     val stats: PlayerStats = PlayerStats(),
     val position: Position = Position(0, 0, "starting_village"),
+    val tilePosition: TilePosition? = null, // New tile-based position
     val inventory: Inventory = Inventory(),
     val equippedItems: Map<EquipmentSlot, Equipment> = emptyMap(),
     val seeds: Long = 0,
@@ -45,7 +46,7 @@ data class Player(
 }
 
 /**
- * Player position in the game world.
+ * Player position in the game world (legacy, kept for compatibility).
  */
 @Serializable
 data class Position(
@@ -58,5 +59,21 @@ data class Position(
         val dx = (x - other.x).toDouble()
         val dy = (y - other.y).toDouble()
         return kotlin.math.sqrt(dx * dx + dy * dy)
+    }
+}
+
+/**
+ * Tile-based position for the new navigation system.
+ */
+@Serializable
+data class TilePosition(
+    val mapId: String,
+    val x: Int,
+    val y: Int
+) {
+    init {
+        require(mapId.isNotBlank()) { "Map ID cannot be blank" }
+        require(x >= 0) { "X coordinate cannot be negative" }
+        require(y >= 0) { "Y coordinate cannot be negative" }
     }
 }

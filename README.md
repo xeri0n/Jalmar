@@ -1,10 +1,10 @@
-# JalmarQuest
+# JalmarQuest 🐦
 
 A comprehensive indie RPG built with Kotlin Multiplatform, featuring 40+ interconnected systems and commercial-grade architecture.
 
 ## Project Status
 
-**Current Milestone:** Milestone 1 - Core Architecture & Foundation (~40% complete)  
+**Current Milestone:** Milestone 1 - Core Architecture & Foundation (~70% complete)  
 **Phase:** 1.2 - State Management System ✅ (Completed)  
 **Next:** Phase 2.1 - Location System & World Map
 
@@ -87,6 +87,32 @@ JalmarQuest/
 - **SaveManager**: Robust save/load with multiple slots and autosave
 - **Player System**: Stats, levels, experience, currency
 
+### 🎮 Features
+
+### Core Systems (Implemented)
+- **TimeManager**: Season cycles, day/night, pause/speed controls
+- **WorldUpdateCoordinator**: Central game loop managing all timed systems
+- **AutosaveManager**: Configurable automatic saving every 5 minutes
+- **GameStateManager**: Centralized, thread-safe state management
+- **SaveManager**: Robust save/load with multiple slots and autosave
+- **Player System**: Stats, levels, experience, currency
+
+- **✨ NEW: Tile-Based Navigation System**
+  - 2D grid-based world with visual rendering
+  - Smart A* pathfinding around obstacles
+  - Points of Interest (POIs) for quests, resources, and encounters
+  - Fog of war with progressive discovery
+  - Click-to-move and directional controls
+  - Terrain types affecting movement costs
+  - Full Butterfly Effect integration
+
+### Visual Features (NEW!)
+- **Tile Map Renderer**: Real-time world visualization
+- **Mini-Map**: Overview with discovered areas
+- **Smooth Animations**: 300ms movement transitions
+- **POI Effects**: Pulsing markers for interactions
+- **Authentic Quail Avatar**: Directional sprite with animations
+
 ## Building & Running
 
 ### Prerequisites
@@ -131,6 +157,21 @@ Following a 13-milestone development plan spanning 70-85 weeks:
 
 See `JalmarQuest_Roadmap.md` for detailed breakdown.
 
+## 🗺️ Navigation System
+
+The game features a revolutionary tile-based navigation system where Jalmar explores a grid-based world:
+
+- **Terrain Variety**: Grass, mud, water, stone - each affecting movement
+- **Smart Pathfinding**: Automatically finds best route around obstacles
+- **Discovery System**: Fog of war reveals the world as you explore
+- **Interactive POIs**: Quest givers, resources, encounters, and more
+- **Stamina Management**: Movement costs stamina based on terrain
+
+### Controls
+- **Click-to-Move**: Click any visible tile to pathfind there
+- **Arrow Keys**: Move one tile at a time
+- **Interact Key**: Activate POIs at current location
+
 ## Testing
 
 Current test coverage focuses on:
@@ -139,8 +180,19 @@ Current test coverage focuses on:
 - **Player Model**: Validation, leveling, stat calculations
 - **Currency**: Transaction integrity, overflow protection
 - **Quest System**: Tracking, completion, flags
+- **Pathfinding**: Navigation intelligence and obstacle avoidance
 
-**Total Tests**: 40+ comprehensive test cases
+**Total Tests**: 108+ comprehensive test cases
+
+Run tests with: `./gradlew :shared:allTests`
+
+## 🧪 Testing
+
+The project includes comprehensive test coverage:
+- **108+ Unit Tests** covering all core systems
+- **Thread-Safety Tests** for concurrent operations
+- **Pathfinding Tests** for navigation intelligence
+- **"Quail Level Stupid" Tests** for edge cases
 
 Run tests with: `./gradlew :shared:allTests`
 
@@ -150,6 +202,17 @@ Run tests with: `./gradlew :shared:allTests`
 - **Integration-Centric**: All systems interconnect seamlessly
 - **No Shortcuts**: 100% feature completeness is mandatory
 - **Progressive Complexity**: Build foundations before advanced features
+
+## 📈 Development Progress
+
+**Current Status**: Milestone 1 - 70% Complete
+
+### Recent Achievements
+- ✅ Complete tile-based navigation overhaul
+- ✅ 30+ new tests for tile system
+- ✅ Full UI rendering components
+- ✅ Butterfly Effect event tracking
+- ✅ POI trigger system for future features
 
 ## Next Steps
 

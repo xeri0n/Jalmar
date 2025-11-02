@@ -13,7 +13,6 @@ import com.jalmarquest.shared.npc.NPCRelationship
 import com.jalmarquest.shared.npc.FactionStanding
 import com.jalmarquest.shared.radiant.RadiantQuestState
 import com.jalmarquest.shared.weather.Weather
-import com.jalmarquest.shared.world.LocationDiscovery
 import kotlinx.serialization.Serializable
 
 /**
@@ -24,6 +23,7 @@ import kotlinx.serialization.Serializable
 data class GameState(
     val version: Int = 1,
     val player: Player,
+    val currentMapId: String = "buttonburgh", // Current active tile map
     val nest: Nest = NestManager.createBasicNest(),
     val aiDirector: AIDirector = AIDirector(),
     val butterflyEffect: ButterflyEffectState = ButterflyEffectState(),
@@ -36,7 +36,7 @@ data class GameState(
     val statistics: PlayerStatistics = PlayerStatistics(),
     val achievements: List<AchievementProgress> = emptyList(),
     val discoveredLocations: Set<String> = emptySet(),
-    val locationDiscoveries: Map<String, LocationDiscovery> = emptyMap(),
+    val discoveredTiles: Map<String, Set<String>> = emptyMap(), // mapId -> Set of "x:y" coordinates
     val unlockedRecipes: Set<String> = emptySet(),
     val completedQuests: Set<String> = emptySet(),
     val activeQuests: List<String> = emptyList(),
@@ -57,8 +57,10 @@ data class GameState(
                 version = CURRENT_VERSION,
                 player = Player(
                     id = playerId,
-                    name = playerName
+                    name = playerName,
+                    tilePosition = TilePosition("buttonburgh", 7, 7) // Spawn at town square
                 ),
+                currentMapId = "buttonburgh",
                 saveTimestamp = System.currentTimeMillis()
             )
         }

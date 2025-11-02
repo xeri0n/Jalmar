@@ -1,10 +1,12 @@
 package com.jalmarquest.shared.state
 
+import com.jalmar.quest.movement.TileMovementResult
+import com.jalmar.quest.tilemap.model.TileCoordinate
 import com.jalmarquest.shared.model.GameState
 import com.jalmarquest.shared.model.Player
 import com.jalmarquest.shared.model.PlayerStats
 import com.jalmarquest.shared.model.Position
-import com.jalmarquest.shared.movement.MovementResult
+import com.jalmarquest.shared.model.TilePosition
 import com.jalmarquest.shared.time.TimeManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,47 +90,79 @@ class GameStateManager {
         }
     }
     
+    // Tile-based movement system
+    
     /**
-     * Execute a successful movement, updating player position, consuming stamina,
-     * and advancing world time.
-     * This should be called AFTER MovementManager validates the move.
-     * 
-     * @param movementResult The successful movement result from MovementManager
-     * @return The updated player position
-     * @throws IllegalArgumentException if movementResult is not Success
+     * Process tile movement result and update game state accordingly.
      */
-    suspend fun executeMove(movementResult: MovementResult.Success): Position {
-        return mutex.withLock {
-            val current = _gameState.value ?: throw IllegalStateException("No game loaded")
-            
-            // Validate stamina is sufficient (defensive check)
-            require(current.player.stats.currentStamina >= movementResult.staminaCost) {
-                "Insufficient stamina for movement: ${current.player.stats.currentStamina} < ${movementResult.staminaCost}"
+    suspend fun processTileMovement(result: TileMovementResult) {
+        when (result) {
+            is TileMovementResult.Success -> {
+                updateState { state ->
+                    val newTilePos = TilePosition(
+                        state.currentMapId,
+                        result.newPosition.x,
+                        result.newPosition.y
+                    )
+                    state.copy(
+                        player = state.player.copy(
+                            tilePosition = newTilePos,
+                            stats = state.player.stats.copy(
+                                currentStamina = (state.player.stats.currentStamina - result.staminaCost).coerceAtLeast(0)
+                            )
+                        )
+                    )
+                }
             }
-            
-            // Create new position
-            val newPosition = Position(
-                x = current.player.position.x,
-                y = current.player.position.y,
-                locationId = movementResult.newLocationId
-            )
-            
-            // Advance world time by movement time cost
-            val newWorldTime = TimeManager.advanceWorldTime(current.worldTime, movementResult.timeCost)
-            
-            // Update player with new position and reduced stamina
-            val updatedPlayer = current.player.copy(
-                position = newPosition,
-                stats = current.player.stats.copy(
-                    currentStamina = current.player.stats.currentStamina - movementResult.staminaCost
+            is TileMovementResult.InsufficientStamina -> {
+                // Just log, don't update state
+            }
+            is TileMovementResult.Blocked -> {
+                // Just log, don't update state
+            }
+            is TileMovementResult.OutOfBounds -> {
+                // Just log, don't update state
+            }
+            is TileMovementResult.Failure -> {
+                // Just log, don't update state
+            }
+        }
+    }
+    
+    /**
+     * Update player's tile position directly.
+     */
+    suspend fun updateTilePosition(mapId: String, x: Int, y: Int) {
+        updateState { state ->
+            state.copy(
+                currentMapId = mapId,
+                player = state.player.copy(
+                    tilePosition = TilePosition(mapId, x, y)
                 )
             )
-            
-            _gameState.value = current.copy(
-                player = updatedPlayer,
-                worldTime = newWorldTime
+        }
+    }
+    
+    /**
+     * Discover a tile on the current map.
+     */
+    suspend fun discoverTile(mapId: String, x: Int, y: Int) {
+        updateState { state ->
+            val tileKey = "$x:$y"
+            val currentDiscovered = state.discoveredTiles[mapId] ?: emptySet()
+            state.copy(
+                discoveredTiles = state.discoveredTiles + (mapId to (currentDiscovered + tileKey))
             )
-            newPosition
+        }
+    }
+    
+    /**
+     * Check if a tile has been discovered.
+     */
+    suspend fun isTileDiscovered(mapId: String, x: Int, y: Int): Boolean {
+        return mutex.withLock {
+            val tileKey = "$x:$y"
+            _gameState.value?.discoveredTiles?.get(mapId)?.contains(tileKey) ?: false
         }
     }
     

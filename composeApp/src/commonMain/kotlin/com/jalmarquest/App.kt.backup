@@ -1,0 +1,349 @@
+package com.jalmarquest
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.jalmar.quest.movement.TileMovementManager
+import com.jalmar.quest.movement.TileMovementResult
+import com.jalmar.quest.tilemap.TileMapCatalog
+import com.jalmar.quest.tilemap.TileMapManager
+import com.jalmar.quest.tilemap.model.POIType
+import com.jalmar.quest.tilemap.model.TileCoordinate
+import com.jalmar.quest.world.WorldLocationCatalog
+import com.jalmarquest.shared.state.GameStateManager
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+
+@Composable
+fun App() {
+    val gameStateManager: GameStateManager = koinInject()
+    val tileMapManager: TileMapManager = koinInject()
+    val tileMovementManager: TileMovementManager = koinInject()
+    
+    val gameState by gameStateManager.gameState.collectAsState()
+    val scope = rememberCoroutineScope()
+    var selectedTile by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    
+    // Initialize game on first launch
+    LaunchedEffect(Unit) {
+        if (gameState == null) {
+            // Create new game
+            gameStateManager.createNewGame("Jalmar")
+            
+            // Load Buttonburgh map
+            tileMapManager.loadMap(TileMapCatalog.createButtonburghMap())
+            tileMapManager.setCurrentMap("buttonburgh")
+            
+            // Auto-discover starting location and nearby tiles (at 0,0 which is Buttonburgh center)
+            gameStateManager.discoverTile("buttonburgh", 0, 0)
+            for (dx in -3..3) {
+                for (dy in -3..3) {
+                    gameStateManager.discoverTile("buttonburgh", dx, dy)
+                }
+            }
+        }
+    }
+    
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize().background(Color(0xFF1A1A1A))) {
+            gameState?.let { state ->
+                Row(modifier = Modifier.fillMaxSize()) {
+                    // Left sidebar - Player info
+                    Card(
+                        modifier = Modifier.width(300.dp).fillMaxHeight().padding(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState())) {
+                            Text("JalmarQuest", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            // Player stats
+                            val pos = state.player.tilePosition
+                            if (pos != null) {
+                                Text("Player: ${state.player.name}", color = Color(0xFFFFD700))
+                                Text("Level ${state.player.level}", color = Color(0xFFAAFFAA))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Text("HP: ${state.player.stats.currentHealth}/${state.player.stats.maxHealth}", 
+                                    color = Color(0xFFFF6B6B))
+                                Text("Stamina: ${state.player.stats.currentStamina}/${state.player.stats.maxStamina}", 
+                                    color = Color(0xFF4ECDC4))
+                                Text("Magic: ${state.player.stats.currentMagic}/${state.player.stats.maxMagic}", 
+                                    color = Color(0xFF95E1FF))
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Divider(color = Color(0xFF444444))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Text("Location", style = MaterialTheme.typography.titleSmall, color = Color(0xFFFFD700))
+                                Text("Map: ${state.currentMapId}", color = Color.White)
+                                Text("Position: (${pos.x}, ${pos.y})", color = Color.White)
+                                
+                                // Show location info from WorldLocationCatalog
+                                WorldLocationCatalog.getLocationAt(pos.x, pos.y)?.let { location ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(location.name, 
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Color(0xFFFFD700))
+                                    Text(location.description, 
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFCCCCCC))
+                                    Text("Levels ${location.levelRange.min}-${location.levelRange.max}",
+                                        color = Color(0xFFAAFFAA))
+                                }
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Divider(color = Color(0xFF444444))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Text("Controls", style = MaterialTheme.typography.titleSmall, color = Color(0xFFFFD700))
+                                Text("Click tiles to move", 
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFFCCCCCC))
+                                Text("Hover for info", 
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFFCCCCCC))
+                            }
+                        }
+                    }
+                    
+                    // Right side - World map with camera system
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Card(
+                            modifier = Modifier.fillMaxSize(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("World Map", 
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = Color.White)
+                                
+                                // Get all unique locations
+                                val allLocations = WorldLocationCatalog.allLocations
+                                val pos = state.player.tilePosition
+                                
+                                if (allLocations.isNotEmpty() && pos != null) {
+                                    // Camera viewport - show tiles around player (PLAYER CENTERED)
+                                    val viewportWidth = 9   // Show 9 tiles wide
+                                    val viewportHeight = 7  // Show 7 tiles tall
+                                    
+                                    val centerX = pos.x
+                                    val centerY = pos.y
+                                    
+                                    val minX = centerX - (viewportWidth / 2)
+                                    val maxX = centerX + (viewportWidth / 2)
+                                    val minY = centerY - (viewportHeight / 2)
+                                    val maxY = centerY + (viewportHeight / 2)
+                                        
+                                    // Render camera viewport - Player is ALWAYS in center
+                                    for (y in minY..maxY) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                            modifier = Modifier.padding(vertical = 1.5.dp)
+                                        ) {
+                                            for (x in minX..maxX) {
+                                                val location = allLocations.find { it.gridX == x && it.gridY == y }
+                                                val isPlayer = (x == pos.x && y == pos.y)
+                                                val isDiscovered = state.discoveredTiles[state.currentMapId]?.contains("$x:$y") == true
+                                                
+                                                // ALWAYS discover tiles near player for better visibility
+                                                    val isNearPlayer = kotlin.math.abs(x - pos.x) <= 2 && kotlin.math.abs(y - pos.y) <= 2
+                                                    val shouldShow = isDiscovered || isPlayer || isNearPlayer
+                                                    
+                                                    // Hover interaction source
+                                                    val interactionSource = remember { MutableInteractionSource() }
+                                                    val isHovered by interactionSource.collectIsHoveredAsState()
+                                                    
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(58.dp) // Optimized size to fit 9x7 grid
+                                                            .background(
+                                                                when {
+                                                                    // Player location - SUPER BRIGHT gold so it's unmissable
+                                                                    isPlayer -> Color(0xFFFFEB3B) // Bright yellow
+                                                                    // Discovered tiles - show bright terrain color
+                                                                    location != null && shouldShow -> Color(location.getTerrainColor())
+                                                                    // Undiscovered but has location - medium gray so "?" is visible
+                                                                    location != null && !shouldShow -> Color(0xFF404040)
+                                                                    // Empty grid spaces - very dark
+                                                                    else -> Color(0xFF1A1A1A)
+                                                                },
+                                                                RoundedCornerShape(6.dp)
+                                                            )
+                                                            .border(
+                                                                width = when {
+                                                                    isPlayer -> 5.dp // THICK border for player
+                                                                    isHovered -> 3.dp
+                                                                    shouldShow -> 2.dp
+                                                                    else -> 1.dp
+                                                                },
+                                                                color = when {
+                                                                    isPlayer -> Color(0xFFFF3D00) // BRIGHT RED border for player - unmissable!
+                                                                    isHovered && location != null -> Color(0xFF00E676) // Bright green hover
+                                                                    shouldShow -> Color(0xFF90A4AE) // Light gray for discovered
+                                                                    location != null -> Color(0xFF546E7A) // Medium gray for undiscovered locations
+                                                                    else -> Color(0xFF263238) // Very dark for empty
+                                                                },
+                                                                RoundedCornerShape(6.dp)
+                                                            )
+                                                            .shadow(
+                                                                elevation = when {
+                                                                    isPlayer -> 8.dp
+                                                                    isHovered -> 6.dp
+                                                                    else -> 1.dp
+                                                                },
+                                                                shape = RoundedCornerShape(6.dp),
+                                                                spotColor = when {
+                                                                    isPlayer -> Color(0xFFFFD700)
+                                                                    isHovered -> Color(0xFF00E676)
+                                                                    else -> Color.Black
+                                                                }
+                                                            )
+                                                            .hoverable(interactionSource = interactionSource)
+                                                            .clickable(
+                                                                enabled = location != null && shouldShow,
+                                                                onClick = {
+                                                                    scope.launch {
+                                                                        if (x != pos.x || y != pos.y) {
+                                                                            // Move to tile
+                                                                            gameStateManager.updateTilePosition(state.currentMapId, x, y)
+                                                                            gameStateManager.discoverTile(state.currentMapId, x, y)
+                                                                            
+                                                                            // Discover surrounding tiles
+                                                                            for (dx in -2..2) {
+                                                                                for (dy in -2..2) {
+                                                                                    gameStateManager.discoverTile(state.currentMapId, x + dx, y + dy)
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        when {
+                                                            // Player marker - ULTRA visible with animation
+                                                            isPlayer -> {
+                                                                Box(contentAlignment = Alignment.Center) {
+                                                                    // Shadow/outline effect
+                                                                    Text(
+                                                                        "◉", 
+                                                                        color = Color(0xFFFF3D00),
+                                                                        fontSize = 40.sp,
+                                                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Black,
+                                                                        textAlign = TextAlign.Center
+                                                                    )
+                                                                    // Main player symbol on top
+                                                                    Text(
+                                                                        "@", 
+                                                                        color = Color(0xFF000000),
+                                                                        fontSize = 36.sp,
+                                                                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                                                                        textAlign = TextAlign.Center
+                                                                    )
+                                                                }
+                                                            }
+                                                            // POI marker for discovered tiles - larger and brighter
+                                                            location != null && shouldShow -> {
+                                                                location.getPOIColor()?.let { poiColor ->
+                                                                    Box(
+                                                                        modifier = Modifier
+                                                                            .size(26.dp)
+                                                                            .background(Color(poiColor), CircleShape)
+                                                                            .border(3.dp, Color.White, CircleShape)
+                                                                            .shadow(4.dp, CircleShape)
+                                                                    )
+                                                                }
+                                                            }
+                                                            // Undiscovered with location - show bright "?"
+                                                            location != null && !shouldShow -> {
+                                                                Text(
+                                                                    "?",
+                                                                    color = Color(0xFFCFD8DC), // Even brighter gray
+                                                                    fontSize = 26.sp,
+                                                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                                                    textAlign = TextAlign.Center
+                                                                )
+                                                            }
+                                                        }
+                                                        // Show tooltip on hover for ANY tile with a location
+                                                    if (isHovered && location != null) {
+                                                        selectedTile = Pair(x, y)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Location tooltip on hover
+                                    selectedTile?.let { (tileX, tileY) ->
+                                        allLocations.find { it.gridX == tileX && it.gridY == tileY }?.let { location ->
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                                                colors = CardDefaults.cardColors(containerColor = Color(0xFF3A3A3A))
+                                            ) {
+                                                Column(modifier = Modifier.padding(16.dp)) {
+                                                    Text(location.name, 
+                                                        style = MaterialTheme.typography.titleLarge,
+                                                        color = Color(0xFFFFD700))
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(location.description,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = Color.White)
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text("Position: (${location.gridX}, ${location.gridY}) | Levels ${location.levelRange.min}-${location.levelRange.max}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color(0xFFAAFFAA))
+                                                    Text("Biome: ${location.biome}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color(0xFF95E1FF))
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Text("Loading map...", color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            } ?: run {
+                // Loading state
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
+}

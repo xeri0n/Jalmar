@@ -131,6 +131,7 @@ data class EnemyCombatData(
     val baseDamage: Int = 5,
     val defense: Int = 0,
     val xpReward: Int = 0,
+    val catalogId: String = "", // ID from EnemyCatalog for loot lookup
     override val activeStatusEffects: List<StatusEffect> = emptyList()
 ) : CombatParticipant {
     init {
@@ -143,5 +144,41 @@ data class EnemyCombatData(
         require(luck >= 0) { "Luck cannot be negative: $luck" }
         require(baseDamage >= 0) { "Base damage cannot be negative: $baseDamage" }
         require(defense >= 0) { "Defense cannot be negative: $defense" }
+    }
+}
+
+/**
+ * Rewards received from a combat encounter.
+ * 
+ * @property xpGained Total experience points from all defeated enemies
+ * @property itemsLooted List of (itemId, quantity) pairs dropped by enemies
+ * @property defeatedEnemies List of defeated enemy names for display
+ */
+@Serializable
+data class CombatRewards(
+    val xpGained: Int,
+    val itemsLooted: List<Pair<String, Int>>,
+    val defeatedEnemies: List<String>
+) {
+    init {
+        require(xpGained >= 0) { "XP gained cannot be negative: $xpGained" }
+        require(itemsLooted.all { it.second > 0 }) { "Item quantities must be positive" }
+    }
+    
+    /**
+     * Provides a formatted summary of combat rewards.
+     */
+    fun summary(): String {
+        val parts = mutableListOf<String>()
+        
+        if (xpGained > 0) {
+            parts.add("$xpGained XP")
+        }
+        
+        if (itemsLooted.isNotEmpty()) {
+            parts.add(itemsLooted.joinToString(", ") { (itemId, quantity) -> "$quantity× $itemId" })
+        }
+        
+        return if (parts.isEmpty()) "No rewards" else parts.joinToString(" | ")
     }
 }
